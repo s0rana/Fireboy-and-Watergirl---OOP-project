@@ -1,6 +1,6 @@
 # Fireboy and Watergirl - OOP 
 
-A new adaptation of the Fireboy and Watergirl game with applications in Object Oriented Programming./
+A new adaptation of the Fireboy and Watergirl game with applications in Object Oriented Programming.
 
 ### Tema 0
 
