@@ -5,7 +5,15 @@
 
 #ifdef _WIN32
 #include <conio.h>
+#include <io.h>
+#include <cstdio>
 char readKey() {
+    if (!_isatty(_fileno(stdin))) {
+        char c;
+        if (std::cin >> c)
+            return c;
+        return 'q';
+    }
     int c = _getch();
     if (c == 0 || c == 224) {
         switch (_getch()) {
@@ -21,27 +29,35 @@ char readKey() {
 #else
 #include <termios.h>
 #include <unistd.h>
+
 char readKey() {
+    if (!isatty(STDIN_FILENO)) {
+        char c;
+        if (std::cin >> c)
+            return c;
+        return 'q';
+    }
+
     termios old{};
     tcgetattr(STDIN_FILENO, &old);
     termios raw = old;
     raw.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &raw);
 
-    char c=0;
-    read(STDIN_FILENO, &c, 1);
-    if (c==27) {
-        char seq[2] = {0,0};
-        read(STDIN_FILENO, &seq[0], 1);
-        read(STDIN_FILENO, &seq[1], 1);
-        if (seq[0] == '[') {
+    char c = 0;
+    if (read(STDIN_FILENO, &c, 1) != 1) {
+        c = 'q';
+    } else if (c == 27) {
+        char seq[2] = {0, 0};
+        if (read(STDIN_FILENO, &seq[0], 1) == 1 &&
+            read(STDIN_FILENO, &seq[1], 1) == 1 && seq[0] == '[') {
             switch (seq[1]) {
-                case 'A': c = 'i'; break;  // sus
-                case 'B': c = 'k'; break;  // jos
-                case 'C': c = 'l'; break;  // dreapta
-                case 'D': c = 'j'; break;  // stânga
+                case 'A': c = 'i'; break;
+                case 'B': c = 'k'; break;
+                case 'C': c = 'l'; break;
+                case 'D': c = 'j'; break;
             }
-        }
+            }
     }
     tcsetattr(STDIN_FILENO, TCSANOW, &old);
     return c;
