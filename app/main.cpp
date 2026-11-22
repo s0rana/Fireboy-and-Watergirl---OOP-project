@@ -51,7 +51,7 @@ char readKey() {
 class Position {
     int x, y;
 public:
-    Position(int x = 0, int y = 0)
+    explicit Position(int x = 0, int y = 0)
         :x(x), y(y){}
 
     friend std::ostream& operator<<(std::ostream& os, const Position& position){
@@ -142,7 +142,7 @@ public:
 class Tile {
     char symbol;
 public:
-    Tile(char symbol = '.')
+    explicit Tile(char symbol = '.')
         :symbol(symbol){}
 
     friend std::ostream& operator<<(std::ostream& os, const Tile& tile) {
@@ -243,7 +243,7 @@ class Level {
         }
     }
 public:
-    Level(const std::string& fileName)
+    explicit Level(const std::string& fileName)
         :h(0), w(0), grid(nullptr) {
 
         std::ifstream file(fileName);
@@ -387,7 +387,7 @@ class Game {
         if (key == 'i' || key == 'j' || key == 'k' || key == 'l') return &water;
         return nullptr;
     }
-    void directionFor(char key, int& dx, int& dy) const {
+    static void directionFor(char key, int& dx, int& dy) {
         dx = 0;
         dy = 0;
         if (key=='w' || key=='i'){ dx = 0; dy = -1;}
@@ -396,7 +396,7 @@ class Game {
         if (key=='d' || key=='l'){ dx = 1; dy = 0;}
     }
 public:
-    Game(const Level& level, int diamonds = 0)
+    explicit Game(const Level& level, int diamonds = 0)
         :level(level), fire('F', level.startCFire()), water('W', level.startCWater()), fdoor('%', level.startDFire()), wdoor('&', level.startDWater()), diamonds(diamonds){}
 
     friend std::ostream& operator<<(std::ostream& os, const Game& game) {
@@ -491,7 +491,7 @@ int main() {
     std::cout << "gol mortal pentru F/W: " << gol.deadlyFor(f) << gol.deadlyFor(wat) << "\n";
 
     std::cout << "\n=== Level ===\n";
-    Level l("map.txt");
+    Level l("assets/map.txt");
     std::cout << l;
     std::cout << "margini ziduri: " << l.verifiedWall() << "\n";
     std::cout << "inMap(0, 0): " << l.inMap(0, 0) << ", inMap(-1, 0): " << l.inMap(-1, 0) << "\n";
@@ -509,7 +509,7 @@ int main() {
     a.emptyTile(1, 1);
     std::cout << "dupa emptyTile in copie: " << a.tileAt(1, 1) << "\n";
 
-    Level b("map.txt");
+    Level b("assets/map.txt");
     b = a;
     b.setTile(1, 1, Tile('~'));
     std::cout << "dupa operator=: b = " << b.tileAt(1, 1) << ", a = " << a.tileAt(1, 1) << "\n";
@@ -521,7 +521,7 @@ int main() {
     std::cout << demo;
 
     std::cout << "\n=== Joc ===\n";
-        Level le("map.txt");
+        Level le("assets/map.txt");
 
         if (!le.verifiedWall())
             throw std::runtime_error("Walls missing.");
