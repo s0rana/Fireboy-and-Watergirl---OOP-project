@@ -332,6 +332,15 @@ public:
         return os;
     }
 
+    void printMap(std::ostream& os) const {
+        for (int y=0; y<h; y++) {
+            for (int x=0; x<w; x++) {
+                 os << grid[index(x,y)];
+            }
+            os << "\n";
+        }
+    }
+
     Level(const Level& other)
         :h(other.h), w(other.w), grid(new Tile[h*w]), cfire(other.cfire), cwater(other.cwater), dfire(other.dfire), dwater(other.dwater), gate(other.gate), button1(other.button1), button2(other.button2) {
 
@@ -433,6 +442,7 @@ public:
 };
 class Game {
     Level level;
+    Level copy;
     Character fire;
     Character water;
     Door fdoor;
@@ -454,14 +464,14 @@ class Game {
     }
 public:
     explicit Game(const Level& level, int diamonds = 0)
-        :level(level), fire('F', level.startCFire()), water('W', level.startCWater()), fdoor('%', level.startDFire()), wdoor('&', level.startDWater()), diamonds(diamonds){}
+        :level(level), copy(level), fire('F', level.startCFire()), water('W', level.startCWater()), fdoor('%', level.startDFire()), wdoor('&', level.startDWater()), diamonds(diamonds){}
 
     friend std::ostream& operator<<(std::ostream& os, const Game& game) {
         Level view = game.level;
         view.setTile(game.fire.getPosition().getX(), game.fire.getPosition().getY(), Tile('F'));
         view.setTile(game.water.getPosition().getX(), game.water.getPosition().getY(), Tile('W'));
 
-        os << view;
+        view.printMap(os);
         return os;
     }
 
@@ -508,7 +518,15 @@ public:
             }
         }
     }
+
+    void reset() {
+        level = copy;
+        fire = Character('F', level.startCFire());
+        water = Character('W', level.startCWater());
+        diamonds = 0;
+    }
 };
+
 int main() {
 
     try {
@@ -595,14 +613,27 @@ int main() {
         Game game(le);
         char key = ' ';
 
-    while (!game.won() && !game.lost() && key != 'q') {
+    while (key != 'q') {
         std::cout << game;
+
+        if (game.won())
+            break;
+
+        if (game.lost())
+            std::cout << "Retry? r or Quit? q\n";
+
         key = readKey();
 
         if (key == 'q')
             break;
 
-        game.move(key);
+        if (key == 'r') {
+            game.reset();
+            continue;
+        }
+
+        if (!game.lost())
+            game.move(key);
     }
 
         std::cout << game;
