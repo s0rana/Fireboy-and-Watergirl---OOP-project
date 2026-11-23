@@ -180,11 +180,27 @@ public:
     }
 
     bool isDiamond() const{
-        return (symbol == 'd');
+        return (symbol == '+' || symbol == '-');
+    }
+
+    bool isDiamondF() const {
+        return (symbol == '+');
+    }
+
+    bool isDiamondW() const {
+        return (symbol == '-');
     }
 
     bool isMud() const {
         return (symbol == '_');
+    }
+
+    bool isButton() const {
+        return (symbol == 'o');
+    }
+
+    bool isGate() const {
+        return (symbol == 'I');
     }
 
     bool isCFire() const {
@@ -221,14 +237,14 @@ class Level {
     int h;
     int w;
     Tile* grid;
-    Position cfire, cwater, dfire, dwater;
+    Position cfire, cwater, dfire, dwater, gate, button1, button2;
 
     int index(int x, int y) const {
         return y*w+x;
     }
 
     void find() {
-        bool CFire = false, DFire = false, CWater= false, DWater= false;
+        bool CFire = false, DFire = false, CWater = false, DWater = false, Gate = false, Button1 = false, Button2 = false;
         for (int y=0 ; y<h; y++)
             for (int x=0;x<w;x++) {
                 if (grid[index(x,y)].isCFire()) {
@@ -245,6 +261,15 @@ class Level {
                 }else if (grid[index(x,y)].isDWater()) {
                     dwater = Position(x,y);
                     DWater= true;
+                }else if (grid[index(x,y)].isButton() && Button1 == false) {
+                    button1 = Position(x,y);
+                    Button1 = true;
+                }else if (grid[index(x,y)].isButton()) {
+                    button2 = Position(x,y);
+                    Button2 = true;
+                }else if (grid[index(x,y)].isGate()) {
+                    gate = Position(x,y);
+                    Gate = true;
                 }
             }
 
@@ -256,6 +281,11 @@ class Level {
         if (DFire == false || DWater == false) {
             delete[] grid;
             throw std::runtime_error("A door is missing from the map.");
+        }
+
+        if (Button1 == false || Button2 == false || Gate == false) {
+            delete[] grid;
+            throw std::runtime_error("Gate or button missing from the map");
         }
     }
 public:
@@ -303,7 +333,7 @@ public:
     }
 
     Level(const Level& other)
-        :h(other.h), w(other.w), grid(new Tile[h*w]), cfire(other.cfire), cwater(other.cwater), dfire(other.dfire), dwater(other.dwater) {
+        :h(other.h), w(other.w), grid(new Tile[h*w]), cfire(other.cfire), cwater(other.cwater), dfire(other.dfire), dwater(other.dwater), gate(other.gate), button1(other.button1), button2(other.button2) {
 
         for (int y=0; y<h; y++) {
             for (int x=0; x<w; x++) {
@@ -320,6 +350,9 @@ public:
             cwater = other.cwater;
             dfire = other.dfire;
             dwater = other.dwater;
+            gate = other.gate;
+            button1 = other.button1;
+            button2 = other.button2;
             delete[] grid;
             grid = new Tile[h*w];
 
@@ -333,8 +366,8 @@ public:
         return *this;
     }
 
-    void setTile(int x, int y, const Tile& tile) {
-        grid[index(x,y)] = tile; //getTile eliminat
+    void setTile(int x, int y, const Tile &tile) {
+        grid[index(x, y)] = tile; //getTile eliminat
     }
 
     // ca sa vad ce fel de tile este trebuie sa accesez la pozitia x si y simbolul tile
@@ -342,8 +375,8 @@ public:
         return (y >= 0 && y < h && x >= 0 && x < w);
     }
 
-    const Tile& tileAt(int x, int y) const{
-        return grid[index(x,y)];
+    const Tile &tileAt(int x, int y) const {
+        return grid[index(x, y)];
     }
 
     void emptyTile(int x, int y) {
@@ -384,6 +417,14 @@ public:
             }
 
         return true;
+    }
+
+    bool pressedButton1(const Character& c) const{
+        return ((button1.getX() == c.getPosition().getX()) && (button1.getY() == c.getPosition().getY()));
+    }
+
+    bool pressedButton2(const Character& c) const{
+        return ((button2.getX() == c.getPosition().getX()) && (button2.getY() == c.getPosition().getY()));
     }
 
     ~Level() {
@@ -452,14 +493,19 @@ public:
 
         if (level.tileAt(nx,ny).isWall())
             return;
+// am in fata o poarta si niciun buton nu e apasat
+        if (level.tileAt(nx,ny).isGate() && !(level.pressedButton1(who == &fire ? water : fire) || level.pressedButton2(who == &fire ? water : fire)))
+            return;
 
         who->move(dx,dy);
 
         if (level.tileAt(nx, ny).deadlyFor(*who)) {
             who->die();
         }else if (level.tileAt(nx,ny).isDiamond()) {
-            diamonds++;
-            level.emptyTile(nx,ny);
+            if ((level.tileAt(nx,ny).isDiamondW() && who->getType() == 'W') || (level.tileAt(nx,ny).isDiamondF() && who->getType() == 'F')) {
+                diamonds++;
+                level.emptyTile(nx,ny);
+            }
         }
     }
 };
@@ -492,11 +538,11 @@ int main() {
     std::cout << "c (F, mort) pe usa de foc: " << df.canUse(c) << "\n";
 
     std::cout << "\n=== Tile ===\n";
-    Tile apa('~'), foc('*'), noroi('_'), gol('.'), zid('w'), diamant('d');
+    Tile apa('~'), foc('*'), noroi('_'), gol('.'), zid('w'), diamantf('+'), diamantw('-');
     Tile tf('F'), tw('W'), uf('%'), uw('&');
     std::cout << "apa = " << apa << "\n";
     std::cout << "isWall: " << zid.isWall() << ", isWater: " << apa.isWater()
-        << ", isFire: " << foc.isFire() << ", isDiamond: " << diamant.isDiamond()
+        << ", isFire: " << foc.isFire() << ", isDiamond: " << diamantf.isDiamond() << ", isDiamondF: " << diamantf.isDiamondF() << ", isDiamondW: " << diamantw.isDiamondW()
         << ", isMud: " << noroi.isMud() << "\n";
     std::cout << "isCFire: " << tf.isCFire() << ", isCWater: " << tw.isCWater()
         << ", isDFire: " << uf.isDFire() << ", isDWater: " << uw.isDWater() << "\n";
@@ -516,8 +562,11 @@ int main() {
     std::cout << "start apa: " << l.startCWater() << ", usa apa: " << l.startDWater() << "\n";
     std::cout << "are diamante: " << l.hasDiamonds() << "\n";
 
+        Tile buton('o'), poarta('I');
+        std::cout << "isButton: " << buton.isButton() << ", isGate: " << poarta.isGate() << "\n";
+
     Level a = l;
-    a.setTile(1, 1, Tile('d'));
+    a.setTile(1, 1, Tile('+'));
     std::cout << "copia: tileAt(1, 1) = " << a.tileAt(1, 1)
         << ", hasDiamonds = " << a.hasDiamonds() << "\n";
     std::cout << "originalul: tileAt(1, 1) = " << l.tileAt(1, 1)
