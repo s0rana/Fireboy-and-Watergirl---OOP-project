@@ -2,6 +2,9 @@
 
 A new adaptation of the Fireboy and Watergirl game with applications in Object Oriented Programming.
 
+Help Fireboy (F) and Watergirl (W) get all the diamonds (+, -) and get to the doors(%, &) safely! But be careful, there are obstacles ahead! Water kills fire, fire kills water, but mud kills them both!
+
+
 ### Tema 0
 
 - [x] Nume proiect (poate fi schimbat ulterior)
